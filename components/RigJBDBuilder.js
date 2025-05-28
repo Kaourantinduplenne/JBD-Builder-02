@@ -1,7 +1,4 @@
 
-// RigJBDBuilder.js - Complete integrated version with all features
-// Includes: Operation, Rig dropdown, PIC, Line of Fire Hazard, Diagram selection, Add Personnel with circles, Task Steps, Zones, Arrows, and Preview
-
 import React, { useState } from 'react';
 import Draggable from 'react-draggable';
 import { Rnd } from 'react-rnd';
@@ -11,23 +8,28 @@ const RigJBDBuilder = () => {
   const [rig, setRig] = useState('');
   const [pic, setPic] = useState('');
   const [lofHazard, setLofHazard] = useState('');
-  const [diagram, setDiagram] = useState('');
   const [personnel, setPersonnel] = useState([]);
-  const [tasks, setTasks] = useState([]);
+  const [personnelPositions, setPersonnelPositions] = useState({});
   const [zones, setZones] = useState([]);
   const [arrows, setArrows] = useState([]);
+  const [diagram, setDiagram] = useState('');
+
+  const colors = ['#FF6B6B', '#6BCB77', '#4D96FF', '#FFC75F', '#845EC2', '#F9F871'];
 
   const addPersonnel = (name) => {
-    if (name.trim()) setPersonnel([...personnel, { name, color: getRandomColor() }]);
+    if (name.trim()) setPersonnel([...personnel, { id: Date.now(), name, color: colors[personnel.length % colors.length] }]);
   };
 
-  const getRandomColor = () => {
-    const colors = ['#FF6B6B', '#6BCB77', '#4D96FF', '#FFC75F', '#845EC2', '#F9F871'];
-    return colors[personnel.length % colors.length];
+  const updatePersonnelPosition = (id, pos) => {
+    setPersonnelPositions({ ...personnelPositions, [id]: pos });
   };
 
   const addZone = (color) => {
     setZones([...zones, { id: Date.now(), color, x: 50, y: 50, width: 100, height: 100 }]);
+  };
+
+  const deleteZone = (id) => {
+    setZones(zones.filter(z => z.id !== id));
   };
 
   const addArrow = (direction) => {
@@ -38,6 +40,10 @@ const RigJBDBuilder = () => {
     setArrows([...arrows, { id: Date.now(), direction, rotate, x: 50, y: 50, width: 100, height: 10 }]);
   };
 
+  const deleteArrow = (id) => {
+    setArrows(arrows.filter(a => a.id !== id));
+  };
+
   return (
     <div style={{ backgroundColor: '#007398', color: 'white', padding: 20, fontFamily: 'Quantico', width: '800px' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -45,6 +51,7 @@ const RigJBDBuilder = () => {
         <div style={{ marginLeft: 10, fontSize: 38, fontWeight: 'bold' }}>JBD Builder</div>
       </div>
       <div style={{ backgroundColor: '#FFC845', height: 8, width: 300, marginTop: 4, marginBottom: 10 }}></div>
+
       <input placeholder="Operation" value={operation} onChange={(e) => setOperation(e.target.value)} style={{ width: '100%', marginBottom: 5 }} />
       <select value={rig} onChange={(e) => setRig(e.target.value)} style={{ width: '100%', marginBottom: 5 }}>
         <option value="">Select Rig</option>
@@ -64,7 +71,10 @@ const RigJBDBuilder = () => {
         <input placeholder="Add Personnel" onKeyDown={(e) => e.key === 'Enter' && addPersonnel(e.target.value)} style={{ width: '100%' }} />
         <ul>
           {personnel.map((p, index) => (
-            <li key={index} style={{ backgroundColor: p.color, borderRadius: '50%', display: 'inline-block', width: 20, height: 20, textAlign: 'center', margin: 2 }}>{index + 1}</li>
+            <li key={p.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 2 }}>
+              <div style={{ backgroundColor: p.color, borderRadius: '50%', width: 20, height: 20, textAlign: 'center', marginRight: 5 }}>{index + 1}</div>
+              <span>{p.name}</span>
+            </li>
           ))}
         </ul>
       </div>
@@ -81,10 +91,21 @@ const RigJBDBuilder = () => {
 
       <div style={{ border: '2px dashed white', width: '800px', height: '500px', marginTop: 10, position: 'relative' }}>
         {zones.map((z) => (
-          <Rnd key={z.id} default={{ x: z.x, y: z.y, width: z.width, height: z.height }} style={{ backgroundColor: `${z.color}90`, border: `2px dashed ${z.color}` }} />
+          <Rnd key={z.id} default={{ x: z.x, y: z.y, width: z.width, height: z.height }} style={{ backgroundColor: `${z.color}90`, border: `2px dashed ${z.color}` }}>
+            <button onClick={() => deleteZone(z.id)} style={{ position: 'absolute', top: 0, right: 0 }}>❌</button>
+          </Rnd>
         ))}
         {arrows.map((a) => (
-          <Rnd key={a.id} default={{ x: a.x, y: a.y, width: a.width, height: a.height }} style={{ backgroundColor: 'blue', transform: `rotate(${a.rotate}deg)` }} />
+          <Rnd key={a.id} default={{ x: a.x, y: a.y, width: a.width, height: a.height }} style={{ backgroundColor: 'blue', transform: `rotate(${a.rotate}deg)` }}>
+            <button onClick={() => deleteArrow(a.id)} style={{ position: 'absolute', top: 0, right: 0 }}>❌</button>
+          </Rnd>
+        ))}
+        {personnel.map((p, index) => (
+          <Draggable key={p.id} onStop={(e, data) => updatePersonnelPosition(p.id, { x: data.x, y: data.y })}>
+            <div style={{ position: 'absolute', backgroundColor: p.color, borderRadius: '50%', width: 30, height: 30, textAlign: 'center', lineHeight: '30px', cursor: 'move' }}>
+              {index + 1}
+            </div>
+          </Draggable>
         ))}
       </div>
 
