@@ -7,45 +7,29 @@ export default function RigJBDBuilder() {
   const [rig, setRig] = useState('DAT');
   const [pic, setPic] = useState('');
   const [lofHazard, setLofHazard] = useState('');
-  const [personnel, setPersonnel] = useState([]);
-  const [newPerson, setNewPerson] = useState('');
-  const [personPositions, setPersonPositions] = useState({});
-  const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState('');
-  const [taskPersons, setTaskPersons] = useState([]);
+  const [diagram, setDiagram] = useState('Drillfloor');
   const [zones, setZones] = useState([]);
   const [arrows, setArrows] = useState([]);
+
   const RIG_OPTIONS = ['DAT', 'DGD', 'DPN', 'DPS', 'DPT', 'DTH', 'DTN', 'DVS'];
-  const COLORS = ['#FF5733', '#33FF57', '#3357FF', '#FF33A1', '#A133FF', '#33FFF5', '#FFD433'];
-
-  const addPerson = () => {
-    if (newPerson.trim()) {
-      const color = COLORS[personnel.length % COLORS.length];
-      setPersonnel([...personnel, { name: newPerson, color }]);
-      setNewPerson('');
-    }
-  };
-
-  const addTask = () => {
-    if (newTask.trim() && taskPersons.length) {
-      setTasks([...tasks, { step: newTask, persons: taskPersons }]);
-      setNewTask('');
-      setTaskPersons([]);
-    }
-  };
-
-  const updatePosition = (index, data) => {
-    setPersonPositions({ ...personPositions, [index]: { x: data.x, y: data.y } });
-  };
+  const DIAGRAM_OPTIONS = ['Drillfloor', 'Helideck', 'Deck'];
 
   const addZone = (color) => {
     setZones([...zones, { id: Date.now(), x: 50, y: 50, w: 100, h: 100, color }]);
+  };
+
+  const deleteZone = (id) => {
+    setZones(zones.filter(z => z.id !== id));
   };
 
   const addArrow = (rotation) => {
     const width = rotation === 0 || rotation === 180 ? 50 : 10;
     const height = rotation === 0 || rotation === 180 ? 10 : 50;
     setArrows([...arrows, { id: Date.now(), x: 50, y: 50, w: width, h: height, rotate: rotation }]);
+  };
+
+  const deleteArrow = (id) => {
+    setArrows(arrows.filter(a => a.id !== id));
   };
 
   return (
@@ -66,62 +50,48 @@ export default function RigJBDBuilder() {
       <input placeholder="PIC" value={pic} onChange={e => setPic(e.target.value)} style={{ width: '100%', margin: '5px 0' }} />
       <textarea placeholder="Line of Fire Hazard" value={lofHazard} onChange={e => setLofHazard(e.target.value)} style={{ width: '100%', margin: '5px 0' }} />
 
-      <div style={{ margin: '10px 0' }}>
-        <input placeholder="Add Personnel" value={newPerson} onChange={e => setNewPerson(e.target.value)} />
-        <button onClick={addPerson}>Add</button>
-        <ul>
-          {personnel.map((p, i) => (
-            <li key={i} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-              <div style={{ backgroundColor: p.color, width: '20px', height: '20px', borderRadius: '50%', marginRight: '5px', textAlign: 'center' }}>{i + 1}</div>
-              {p.name}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div style={{ margin: '10px 0' }}>
-        <input placeholder="Task Step" value={newTask} onChange={e => setNewTask(e.target.value)} />
-        <select multiple value={taskPersons} onChange={e => setTaskPersons(Array.from(e.target.selectedOptions, o => o.value))}>
-          {personnel.map((p, i) => (
-            <option key={i} value={p.name}>{p.name}</option>
-          ))}
-        </select>
-        <button onClick={addTask}>Add Task</button>
-      </div>
+      <select value={diagram} onChange={e => setDiagram(e.target.value)} style={{ width: '100%', margin: '5px 0' }}>
+        {DIAGRAM_OPTIONS.map((option, index) => (
+          <option key={index} value={option}>{option}</option>
+        ))}
+      </select>
 
       <div style={{ margin: '10px 0' }}>
         <button onClick={() => addZone('green')}>Add Green Zone</button>
         <button onClick={() => addZone('red')}>Add Red Zone</button>
         <button onClick={() => addZone('black')}>Add Black Zone</button>
-        <button onClick={() => addArrow(0)}>Add Horizontal Arrow</button>
-        <button onClick={() => addArrow(90)}>Add Vertical Arrow</button>
-        <button onClick={() => addArrow(45)}>Add 45° Left Arrow</button>
-        <button onClick={() => addArrow(315)}>Add 45° Right Arrow</button>
+        <button onClick={() => addArrow(0)}>➕ Horizontal Arrow</button>
+        <button onClick={() => addArrow(90)}>➕ Vertical Arrow</button>
+        <button onClick={() => addArrow(45)}>➕ 45° Left Arrow</button>
+        <button onClick={() => addArrow(315)}>➕ 45° Right Arrow</button>
       </div>
 
-      <div style={{ width: '800px', height: '600px', position: 'relative', backgroundColor: '#FFFFFF', color: 'black' }}>
-        {personnel.map((p, i) => (
-          <Rnd
-            key={i}
-            size={{ width: 30, height: 30 }}
-            position={personPositions[i] || { x: 0, y: 0 }}
-            onDragStop={(e, d) => updatePosition(i, d)}
-            style={{ backgroundColor: p.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}
+      <div style={{ width: '800px', height: '600px', position: 'relative', backgroundColor: '#FFFFFF', color: 'black', border: '1px solid black' }}>
+        <img src={`/${diagram}.png`} alt={diagram} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute' }} />
+        
+        {zones.map(z => (
+          <Rnd key={z.id}
+            size={{ width: z.w, height: z.h }}
+            position={{ x: z.x, y: z.y }}
+            onDragStop={(e, d) => setZones(zones.map(zone => zone.id === z.id ? { ...zone, x: d.x, y: d.y } : zone))}
+            onResizeStop={(e, dir, ref, delta, pos) => setZones(zones.map(zone => zone.id === z.id ? { ...zone, w: parseInt(ref.style.width), h: parseInt(ref.style.height), x: pos.x, y: pos.y } : zone))}
+            style={{ backgroundColor: `${z.color}90`, border: `2px dashed ${z.color}`, zIndex: 10 }}
           >
-            {i + 1}
+            <button onClick={() => deleteZone(z.id)} style={{ fontSize: '10px', backgroundColor: 'white', color: 'black' }}>❌</button>
           </Rnd>
         ))}
-      </div>
 
-      <div style={{ marginTop: '10px' }}>
-        <h3>Task Steps</h3>
-        <ul>
-          {tasks.map((t, i) => (
-            <li key={i}>
-              {i + 1}. {t.step} - Persons: {t.persons.join(', ')}
-            </li>
-          ))}
-        </ul>
+        {arrows.map(a => (
+          <Rnd key={a.id}
+            size={{ width: a.w, height: a.h }}
+            position={{ x: a.x, y: a.y }}
+            onDragStop={(e, d) => setArrows(arrows.map(arrow => arrow.id === a.id ? { ...arrow, x: d.x, y: d.y } : arrow))}
+            onResizeStop={(e, dir, ref, delta, pos) => setArrows(arrows.map(arrow => arrow.id === a.id ? { ...arrow, w: parseInt(ref.style.width), h: parseInt(ref.style.height), x: pos.x, y: pos.y } : arrow))}
+            style={{ backgroundColor: 'blue', transform: `rotate(${a.rotate}deg)`, zIndex: 10 }}
+          >
+            <button onClick={() => deleteArrow(a.id)} style={{ fontSize: '10px', backgroundColor: 'white', color: 'black' }}>❌</button>
+          </Rnd>
+        ))}
       </div>
 
       <button style={{ marginTop: '10px', padding: '10px', backgroundColor: '#FFB511', color: 'black' }} onClick={() => alert('Generate Preview Placeholder')}>
