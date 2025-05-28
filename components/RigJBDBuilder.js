@@ -43,7 +43,9 @@ export default function RigJBDBuilder() {
   };
 
   const addArrow = (rotation) => {
-    setArrows([...arrows, { id: Date.now(), x: 50, y: 50, w: rotation === 0 || rotation === 180 ? 50 : 10, h: rotation === 0 || rotation === 180 ? 10 : 50, rotate: rotation }]);
+    const width = rotation === 0 || rotation === 180 ? 50 : 10;
+    const height = rotation === 0 || rotation === 180 ? 10 : 50;
+    setArrows([...arrows, { id: Date.now(), x: 50, y: 50, w: width, h: height, rotate: rotation }]);
   };
 
   return (
